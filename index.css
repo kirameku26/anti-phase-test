@@ -20,22 +20,25 @@ button {
   border-radius: 30px;
   border: 2px solid transparent;
   transition: filter 0.15s ease, background-color 0.15s ease, color 0.15s ease;
-  box-shadow: none; /* 影は入れない */
+  box-shadow: none;
   display: inline-flex;
   align-items: center;
-  justify-content: center; /* ★ 中央揃えにして文字が変わっても崩れないようにする ★ */
+  justify-content: center;
   gap: 8px;
-  min-width: 170px;        /* ★ ボタンの横幅を固定（テキスト切り替えで伸縮しない） ★ */
+  min-width: 170px;
 }
 
-/* ホバー時：位置は移動させず、若干黒く（暗く）する */
+button .glyphicon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
 button:hover:not(:disabled) {
   transform: none;
   box-shadow: none;
   filter: brightness(0.92);
 }
 
-/* クリックした瞬間：さらに若干黒くする */
 button:active:not(:disabled) {
   transform: none;
   box-shadow: none;
@@ -49,48 +52,39 @@ button:disabled {
   filter: none;
 }
 
-.btn-icon {
-  font-size: 14px;
-}
-
-/* ★ 正位相ボタン ★ */
-/* 停止中：白背景 ＋ 青枠線 */
+/* 正位相ボタン */
 #normalBtn { 
   background-color: #ffffff; 
   border-color: #2196f3; 
   color: #2196f3;
 }
 
-/* 再生中 (active)：鮮やかな青塗りに変化 */
 #normalBtn.active {
   background-color: #2196f3;
   border-color: #2196f3;
   color: #ffffff;
 }
 
-/* ★ 逆位相ボタン ★ */
-/* 停止中：白背景 ＋ 赤枠線 */
+/* 逆位相ボタン */
 #invertBtn { 
   background-color: #ffffff; 
   border-color: #ff5722; 
   color: #ff5722;
 }
 
-/* 再生中 (active)：鮮やかな赤塗りに変化 */
 #invertBtn.active {
   background-color: #ff5722;
   border-color: #ff5722;
   color: #ffffff;
 }
 
-/* ★ すべて止めるボタン ★ */
+/* すべて止めるボタン */
 #stopBtn { 
   background-color: #e0e0e0; 
   border-color: #bdbdbd; 
   color: #424242;
 }
 
-/* コントロールパネル以降のスタイル */
 .status { 
   margin-top: 20px; 
   font-size: 18px; 
@@ -136,13 +130,15 @@ button:disabled {
   text-align: right;
 }
 
+/* 波形選択ボックスを横長に拡張 */
 .slider-container select {
-  width: 160px;
-  padding: 5px;
+  flex: 1;
+  padding: 6px 12px;
   font-size: 15px;
   font-weight: bold;
-  text-align: center;
   cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 .unit {

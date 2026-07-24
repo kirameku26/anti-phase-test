@@ -7,10 +7,9 @@ let delayNode = null;
 let isNormalOn = false;
 let isInvertOn = false;
 
-// 描画コントロール変数（常に 1.0 倍速で固定）
-const drawSpeed = 1.0;   
 let simulatedPhase = 0; // 位相追従変数
 let lastDrawTime = 0;
+let userSpeedScale = 1.000; // 0.000 〜 1.000 倍速
 
 // UI Elements
 const normalBtn = document.getElementById('normalBtn');
@@ -23,6 +22,8 @@ const freqInput = document.getElementById('freqInput');
 const freqNum = document.getElementById('freqNum');
 const timeSpanInput = document.getElementById('timeSpanInput');
 const timeSpanNum = document.getElementById('timeSpanNum');
+const speedInput = document.getElementById('speedInput');
+const speedNum = document.getElementById('speedNum');
 const delayInput = document.getElementById('delayInput');
 const delayNum = document.getElementById('delayNum');
 
@@ -30,22 +31,18 @@ const delayNum = document.getElementById('delayNum');
 const canvas = document.getElementById('waveformCanvas');
 const canvasCtx = canvas.getContext('2d');
 
-// ★解像度調整（Retina/高解像度ディスプレイ対応）★
 let cssWidth = 600;
 let cssHeight = 200;
 let dpr = window.devicePixelRatio || 1;
 
 function setupCanvasHD() {
   dpr = window.devicePixelRatio || 1;
-  // CSS上の見た目のサイズ
   cssWidth = 600;
   cssHeight = 200;
 
-  // 内部描画バッファのサイズを高解像度化 (例: dpr=2 なら 1200x400 ピクセル)
   canvas.width = cssWidth * dpr;
   canvas.height = cssHeight * dpr;
 
-  // CSSサイズを固定
   canvas.style.width = cssWidth + 'px';
   canvas.style.height = cssHeight + 'px';
 }
@@ -55,20 +52,17 @@ function initAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContextClass();
 
-    // 1. マスター音源
     masterOsc = audioCtx.createOscillator();
     masterOsc.type = waveTypeSelect ? waveTypeSelect.value : 'sine';
 
     const initialFreq = parseFloat(freqNum.value) || 1000;
     masterOsc.frequency.setValueAtTime(initialFreq, audioCtx.currentTime);
 
-    // 2. 正位相ルート
     normalGain = audioCtx.createGain();
     normalGain.gain.setValueAtTime(0, audioCtx.currentTime);
     masterOsc.connect(normalGain);
     normalGain.connect(audioCtx.destination);
 
-    // 3. 逆位相ルート
     delayNode = audioCtx.createDelay(20.0);
     const initialDelay = parseFloat(delayNum.value) || 0;
     delayNode.delayTime.setValueAtTime(initialDelay / 1000, audioCtx.currentTime);
@@ -88,14 +82,12 @@ function initAudio() {
   }
 }
 
-// 波形の切り替え処理
 window.changeWaveType = function(type) {
   if (masterOsc) {
     masterOsc.type = type;
   }
 };
 
-// 周波数の同期処理
 window.syncFreq = function(source, value) {
   const val = parseFloat(value) || 1;
 
@@ -110,7 +102,6 @@ window.syncFreq = function(source, value) {
   }
 };
 
-// 表示時間範囲 (1ms〜1000ms) の同期処理
 window.syncTimeSpan = function(source, value) {
   const val = parseFloat(value) || 1;
 
@@ -121,7 +112,19 @@ window.syncTimeSpan = function(source, value) {
   }
 };
 
-// 遅延時間の同期処理
+window.syncSpeed = function(source, value) {
+  const val = parseFloat(value);
+  const numVal = isNaN(val) ? 1.0 : Math.max(0, Math.min(1.0, val));
+
+  if (source === 'range') {
+    speedNum.value = numVal.toFixed(3);
+  } else {
+    speedInput.value = numVal;
+  }
+
+  userSpeedScale = numVal;
+};
+
 window.syncDelay = function(source, value) {
   const val = parseFloat(value) || 0;
 
@@ -136,7 +139,6 @@ window.syncDelay = function(source, value) {
   }
 };
 
-// ボタン操作
 normalBtn.addEventListener('click', () => {
   initAudio();
   isNormalOn = !isNormalOn;
@@ -160,11 +162,9 @@ stopBtn.addEventListener('click', () => {
   updateUI();
 });
 
-// UIとボタン状態の更新
 function updateUI() {
   stopBtn.disabled = !isNormalOn && !isInvertOn;
 
-  // 正位相ボタン
   if (isNormalOn) {
     normalBtn.classList.add('active');
     normalBtn.innerHTML = '<i class="glyphicon glyphicon-stop"></i> 正位相を止める';
@@ -173,7 +173,6 @@ function updateUI() {
     normalBtn.innerHTML = '<i class="glyphicon glyphicon-play"></i> 正位相を鳴らす';
   }
 
-  // 逆位相ボタン
   if (isInvertOn) {
     invertBtn.classList.add('active');
     invertBtn.innerHTML = '<i class="glyphicon glyphicon-stop"></i> 逆位相を止める';
@@ -182,7 +181,6 @@ function updateUI() {
     invertBtn.innerHTML = '<i class="glyphicon glyphicon-play"></i> 逆位相を鳴らす';
   }
 
-  // ステータス表示の更新
   if (isNormalOn && isInvertOn) {
     statusTxt.textContent = "正位相 ＋ 逆位相（干渉再生中）";
     statusTxt.style.color = "purple";
@@ -198,7 +196,6 @@ function updateUI() {
   }
 }
 
-// 各種波形の計算関数
 function getWaveValue(type, phase) {
   const p = ((phase % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
   
@@ -216,7 +213,6 @@ function getWaveValue(type, phase) {
   }
 }
 
-// 縦軸（dB 表記）と横軸（ms）の描画
 function drawAxes() {
   const width = cssWidth;
   const height = cssHeight;
@@ -226,7 +222,7 @@ function drawAxes() {
 
   canvasCtx.save();
 
-  // 1. グリッド線（破線）
+  // 1. グリッド線
   canvasCtx.strokeStyle = '#333333';
   canvasCtx.lineWidth = 1;
   canvasCtx.setLineDash([4, 4]);
@@ -234,19 +230,16 @@ function drawAxes() {
   const scaleMax = height * 0.4;
 
   canvasCtx.beginPath();
-  // +6 dB
   canvasCtx.moveTo(0, centerY - scaleMax);
   canvasCtx.lineTo(width, centerY - scaleMax);
   canvasCtx.moveTo(0, centerY + scaleMax);
   canvasCtx.lineTo(width, centerY + scaleMax);
 
-  // 0 dB
   canvasCtx.moveTo(0, centerY - scaleMax * 0.5);
   canvasCtx.lineTo(width, centerY - scaleMax * 0.5);
   canvasCtx.moveTo(0, centerY + scaleMax * 0.5);
   canvasCtx.lineTo(width, centerY + scaleMax * 0.5);
 
-  // 垂直線 (4等分)
   const plotLeft = 60;
   const plotWidth = width - plotLeft;
 
@@ -281,16 +274,18 @@ function drawAxes() {
   canvasCtx.fillText(' 0 dB', 2, centerY + scaleMax * 0.5 + 4);
   canvasCtx.fillText('+6 dB', 2, centerY + scaleMax + 4);
 
-  // 横軸 (ms)
-  canvasCtx.fillText('0ms', plotLeft - 10, centerY + 15);
-  
-  const halfMsStr = (currentSpanMs / 2).toFixed(1) + 'ms';
-  const fullMsStr = currentSpanMs.toFixed(0) + 'ms';
+  // ★ 横軸：描画速度(倍数)に応じた実質時間(ms)の計算 ★
+  // 速度が0の時は∞(無限)にならないよう、安全に計算
+  const effectiveSpanMs = userSpeedScale > 0 ? (currentSpanMs / userSpeedScale) : currentSpanMs;
 
-  canvasCtx.fillText(halfMsStr, plotLeft + plotWidth / 2 - 15, centerY + 15);
+  const halfMsStr = (effectiveSpanMs / 2).toFixed(1) + 'ms';
+  const fullMsStr = (userSpeedScale > 0) ? (effectiveSpanMs.toFixed(1) + 'ms') : '静止';
+
+  canvasCtx.fillText('0ms', plotLeft - 10, centerY + 15);
+  canvasCtx.fillText(halfMsStr, plotLeft + plotWidth / 2 - 20, centerY + 15);
   canvasCtx.fillText(fullMsStr, width - 45, centerY + 15);
 
-  // 黄色い文字部分
+  // ヘッダー情報
   canvasCtx.fillStyle = '#ffca28';
   canvasCtx.font = 'bold 12px sans-serif';
   canvasCtx.fillText(`現在の周波数: ${currentFreq} Hz (縦軸: dBFS)`, plotLeft + 10, 18);
@@ -298,7 +293,6 @@ function drawAxes() {
   canvasCtx.restore();
 }
 
-// 波形の描画関数
 function drawCalculatedLine(type, color, lineWidth = 2) {
   const freq = parseFloat(freqNum.value) || 1000;
   const delayMs = parseFloat(delayNum.value) || 0;
@@ -317,9 +311,10 @@ function drawCalculatedLine(type, color, lineWidth = 2) {
   const plotLeft = 60;
   const plotWidth = width - plotLeft;
 
-  const timeSpanSec = spanMs / 1000.0;
+  // 描画速度（倍率）に応じて描画する実質的な時間幅(秒)を調整
+  const effectiveSpanMs = userSpeedScale > 0 ? (spanMs / userSpeedScale) : spanMs;
+  const timeSpanSec = effectiveSpanMs / 1000.0;
 
-  // 画質向上に伴いサンプル数（描画の滑らかさ）も強化
   const requiredSamples = Math.max(plotWidth * dpr, freq * 12 * timeSpanSec);
   const stepSize = plotWidth / requiredSamples;
 
@@ -368,11 +363,14 @@ function drawWaveform(timestamp) {
   const deltaTime = (timestamp - lastDrawTime) / 1000;
   lastDrawTime = timestamp;
 
-  simulatedPhase += 2 * Math.PI * (drawSpeed * 5) * deltaTime;
+  const freq = parseFloat(freqNum.value) || 1000;
+  const spanMs = parseFloat(timeSpanNum.value) || 10;
+  
+  const speedFactor = Math.max(0.2, Math.min(2.0, 50 / spanMs));
+  simulatedPhase += 2 * Math.PI * freq * deltaTime * 0.05 * speedFactor * userSpeedScale;
 
-  // スケールリセット＆クリア
   canvasCtx.save();
-  canvasCtx.scale(dpr, dpr); // ★描画領域をピクセル比に合わせて自動スケール★
+  canvasCtx.scale(dpr, dpr);
 
   canvasCtx.fillStyle = '#1a1a1a';
   canvasCtx.fillRect(0, 0, cssWidth, cssHeight);
@@ -381,7 +379,9 @@ function drawWaveform(timestamp) {
 
   if (isNormalOn) drawCalculatedLine('normal', '#2196f3', 2);
   if (isInvertOn) drawCalculatedLine('invert', '#ff5722', 2);
-  if (isNormalOn || isInvertOn) drawCalculatedLine('combined', '#00e676', 2.5);
+  
+  // 常時表示
+  drawCalculatedLine('combined', '#00e676', 2.5);
 
   canvasCtx.restore();
 }
@@ -391,5 +391,4 @@ window.addEventListener('DOMContentLoaded', () => {
   requestAnimationFrame(drawWaveform);
 });
 
-// 画面サイズ変更やディスプレイ移動時にも解像度を再設定
 window.addEventListener('resize', setupCanvasHD);
