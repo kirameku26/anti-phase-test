@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Audio API - 周波数・位相・波形制御デモ</title>
+  
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <h1>周波数・位相・波形制御デモ</h1>
+  <p>※同じスピーカーから同時に鳴らすと、波形が打ち消し合ったり強め合ったりします。</p>
+  
+  <div class="button-group">
+    <button id="normalBtn"><i class="glyphicon glyphicon-play"></i> 正位相を鳴らす</button>
+    <button id="invertBtn"><i class="glyphicon glyphicon-play"></i> 逆位相を鳴らす</button>
+    <button id="stopBtn" disabled><i class="glyphicon glyphicon-stop"></i> すべて止める</button>
+  </div>
+
+  <div class="control-panel">
+    <div class="slider-container">
+      <label for="waveType">波形:</label>
+      <select id="waveType" onchange="changeWaveType(this.value)">
+        <option value="sine">正弦波 (sine)</option>
+        <option value="square">矩形波 (square)</option>
+        <option value="sawtooth">鋸歯状波 (sawtooth)</option>
+        <option value="triangle">三角波 (triangle)</option>
+      </select>
+      <span class="unit"></span>
+    </div>
+
+    <div class="slider-container">
+      <label for="freqInput">周波数:</label>
+      <input type="range" id="freqInput" min="1" max="20000" step="1" value="1000" oninput="syncFreq('range', this.value)">
+      <input type="number" id="freqNum" min="1" max="20000" step="1" value="1000" oninput="syncFreq('num', this.value)">
+      <span class="unit">Hz</span>
+    </div>
+
+    <div class="slider-container">
+      <label for="timeSpanInput">表示範囲:</label>
+      <input type="range" id="timeSpanInput" min="1" max="1000" step="1" value="10" oninput="syncTimeSpan('range', this.value)">
+      <input type="number" id="timeSpanNum" min="1" max="1000" step="1" value="10" oninput="syncTimeSpan('num', this.value)">
+      <span class="unit">ms</span>
+    </div>
+
+    <div class="slider-container">
+      <label for="delayInput">遅延:</label>
+      <input type="range" id="delayInput" min="0" max="100" step="0.001" value="0" oninput="syncDelay('range', this.value)">
+      <input type="number" id="delayNum" min="0" max="100" step="0.001" value="0.000" oninput="syncDelay('num', this.value)">
+      <span class="unit">ms</span>
+    </div>
+  </div>
+
+  <div class="status">
+    状態: <span id="statusTxt">停止中</span>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="color-box" style="background-color: #2196f3;"></div>正位相の波</div>
+    <div class="legend-item"><div class="color-box" style="background-color: #ff5722;"></div>逆位相の波（遅延あり）</div>
+    <div class="legend-item"><div class="color-box" style="background-color: #00e676;"></div>合成波（出力音）</div>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <canvas id="waveformCanvas" width="600" height="200" style="background-color: #1a1a1a; border-radius: 8px;"></canvas>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>
