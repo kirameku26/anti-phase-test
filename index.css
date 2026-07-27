@@ -34,22 +34,16 @@ button .glyphicon {
 }
 
 button:hover:not(:disabled) {
-  transform: none;
-  box-shadow: none;
   filter: brightness(0.92);
 }
 
 button:active:not(:disabled) {
-  transform: none;
-  box-shadow: none;
   filter: brightness(0.85);
 }
 
 button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  box-shadow: none;
-  filter: none;
 }
 
 /* 正位相ボタン */
@@ -130,7 +124,6 @@ button:disabled {
   text-align: right;
 }
 
-/* 波形選択ボックスを横長に拡張 */
 .slider-container select {
   flex: 1;
   padding: 6px 12px;
@@ -165,4 +158,33 @@ button:disabled {
   width: 15px; 
   height: 15px; 
   border-radius: 3px; 
+}
+
+/* ★ 右下のトップに戻るボタン ★ */
+#scrollTopBtn {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 48px;
+  height: 48px;
+  min-width: unset;
+  padding: 0;
+  border-radius: 50%;
+  background-color: #333333;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#scrollTopBtn .glyphicon {
+  margin-right: 0;
+  font-size: 18px;
+}
+
+#scrollTopBtn:hover {
+  background-color: #555555;
 }

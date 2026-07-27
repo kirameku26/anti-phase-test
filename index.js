@@ -149,7 +149,7 @@ normalBtn.addEventListener('click', () => {
 invertBtn.addEventListener('click', () => {
   initAudio();
   isInvertOn = !isInvertOn;
-  if (invertGain) invertGain.gain.setValueAtTime(isInvertOn ? -0.2 : 0, audioCtx.currentTime);
+  if (isInvertOn) invertGain.gain.setValueAtTime(isInvertOn ? -0.2 : 0, audioCtx.currentTime);
   updateUI();
 });
 
@@ -222,7 +222,7 @@ function drawAxes() {
 
   canvasCtx.save();
 
-  // 1. グリッド線
+  // グリッド線
   canvasCtx.strokeStyle = '#333333';
   canvasCtx.lineWidth = 1;
   canvasCtx.setLineDash([4, 4]);
@@ -250,7 +250,7 @@ function drawAxes() {
   }
   canvasCtx.stroke();
 
-  // 2. メイン軸線
+  // メイン軸線
   canvasCtx.setLineDash([]);
   canvasCtx.strokeStyle = '#666666';
   canvasCtx.lineWidth = 1.5;
@@ -263,7 +263,7 @@ function drawAxes() {
   canvasCtx.lineTo(plotLeft, height);
   canvasCtx.stroke();
 
-  // 3. 目盛りラベル
+  // 目盛りラベル
   canvasCtx.fillStyle = '#aaaaaa';
   canvasCtx.font = '10px monospace';
 
@@ -274,16 +274,15 @@ function drawAxes() {
   canvasCtx.fillText(' 0 dB', 2, centerY + scaleMax * 0.5 + 4);
   canvasCtx.fillText('+6 dB', 2, centerY + scaleMax + 4);
 
-  // ★ 横軸：描画速度(倍数)に応じた実質時間(ms)の計算 ★
-  // 速度が0の時は∞(無限)にならないよう、安全に計算
-  const effectiveSpanMs = userSpeedScale > 0 ? (currentSpanMs / userSpeedScale) : currentSpanMs;
-
-  const halfMsStr = (effectiveSpanMs / 2).toFixed(1) + 'ms';
-  const fullMsStr = (userSpeedScale > 0) ? (effectiveSpanMs.toFixed(1) + 'ms') : '静止';
+  // ★ 横軸 (ms) と倍速表記の表示 ★
+  const halfMsStr = (currentSpanMs / 2).toFixed(1) + 'ms';
+  const fullMsStr = currentSpanMs.toFixed(0) + 'ms';
+  const speedStr = `(×${userSpeedScale.toFixed(3)})`;
 
   canvasCtx.fillText('0ms', plotLeft - 10, centerY + 15);
-  canvasCtx.fillText(halfMsStr, plotLeft + plotWidth / 2 - 20, centerY + 15);
-  canvasCtx.fillText(fullMsStr, width - 45, centerY + 15);
+  canvasCtx.fillText(halfMsStr, plotLeft + plotWidth / 2 - 15, centerY + 15);
+  // 右下に「10ms (×1.000)」のように表示
+  canvasCtx.fillText(`${fullMsStr} ${speedStr}`, width - 85, centerY + 15);
 
   // ヘッダー情報
   canvasCtx.fillStyle = '#ffca28';
@@ -311,9 +310,7 @@ function drawCalculatedLine(type, color, lineWidth = 2) {
   const plotLeft = 60;
   const plotWidth = width - plotLeft;
 
-  // 描画速度（倍率）に応じて描画する実質的な時間幅(秒)を調整
-  const effectiveSpanMs = userSpeedScale > 0 ? (spanMs / userSpeedScale) : spanMs;
-  const timeSpanSec = effectiveSpanMs / 1000.0;
+  const timeSpanSec = spanMs / 1000.0;
 
   const requiredSamples = Math.max(plotWidth * dpr, freq * 12 * timeSpanSec);
   const stepSize = plotWidth / requiredSamples;
@@ -355,19 +352,21 @@ function drawCalculatedLine(type, color, lineWidth = 2) {
   canvasCtx.stroke();
 }
 
-// リアルタイム描画ループ
+// リアルタイム描画ループ（ストロボ効果防止）
 function drawWaveform(timestamp) {
   requestAnimationFrame(drawWaveform);
 
   if (!lastDrawTime) lastDrawTime = timestamp;
-  const deltaTime = (timestamp - lastDrawTime) / 1000;
+  const deltaTime = Math.min((timestamp - lastDrawTime) / 1000, 0.1);
   lastDrawTime = timestamp;
 
-  const freq = parseFloat(freqNum.value) || 1000;
   const spanMs = parseFloat(timeSpanNum.value) || 10;
   
-  const speedFactor = Math.max(0.2, Math.min(2.0, 50 / spanMs));
-  simulatedPhase += 2 * Math.PI * freq * deltaTime * 0.05 * speedFactor * userSpeedScale;
+  // 表示範囲(10ms等)に合わせた適切なスクロール感のベース値
+  const visualBaseSpeed = (10 / spanMs) * 12;
+
+  // 描画速度(userSpeedScale)に直接比例させて滑らかにコントロール
+  simulatedPhase += 2 * Math.PI * visualBaseSpeed * deltaTime * userSpeedScale;
 
   canvasCtx.save();
   canvasCtx.scale(dpr, dpr);

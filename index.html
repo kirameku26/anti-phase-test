@@ -3,22 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Audio API - 周波数・位相・波形制御デモ</title>
+  <title>ノイズキャンセリングメーカー</title>
   
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
 
-  <h1>周波数・位相・波形制御デモ</h1>
-  <p>※同じスピーカーから同時に鳴らすと、波形が打ち消し合ったり強め合ったりします。</p>
-  
+  <h1>ノイズキャンセリングメーカー</h1>
+  <p>ノイズキャンセリングとは、逆位相で音を消す技術のことです。</p>
   <div class="button-group">
     <button id="normalBtn"><i class="glyphicon glyphicon-play"></i> 正位相を鳴らす</button>
     <button id="invertBtn"><i class="glyphicon glyphicon-play"></i> 逆位相を鳴らす</button>
     <button id="stopBtn" disabled><i class="glyphicon glyphicon-stop"></i> すべて止める</button>
   </div>
-
+  
   <div class="control-panel">
     <div class="slider-container">
       <label for="waveType">波形:</label>
@@ -73,6 +72,10 @@
   <div style="margin-top: 10px;">
     <canvas id="waveformCanvas" width="600" height="200" style="background-color: #1a1a1a; border-radius: 8px;"></canvas>
   </div>
+
+  <a id="scrollTopBtn" href="https://kirameku.f5.si/" title="トップページに戻る">
+    <i class="glyphicon glyphicon-home"></i>
+  </a>
 
   <script src="index.js"></script>
 </body>
