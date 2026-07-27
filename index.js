@@ -146,10 +146,13 @@ normalBtn.addEventListener('click', () => {
   updateUI();
 });
 
+// 修正後のコード
 invertBtn.addEventListener('click', () => {
   initAudio();
   isInvertOn = !isInvertOn;
-  if (isInvertOn) invertGain.gain.setValueAtTime(isInvertOn ? -0.2 : 0, audioCtx.currentTime);
+  if (invertGain) {
+    invertGain.gain.setValueAtTime(isInvertOn ? -0.2 : 0, audioCtx.currentTime);
+  }
   updateUI();
 });
 
