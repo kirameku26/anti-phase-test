@@ -35,6 +35,24 @@ let cssWidth = 600;
 let cssHeight = 200;
 let dpr = window.devicePixelRatio || 1;
 
+let verticalScale = 1.0;
+
+const vScaleInput = document.getElementById('vScaleInput');
+const vScaleNum = document.getElementById('vScaleNum');
+
+window.syncVScale = function(source, value) {
+  const val = parseFloat(value);
+  const numVal = isNaN(val) ? 1.0 : Math.max(0.05, Math.min(1.0, val));
+
+  if (source === 'range') {
+    vScaleNum.value = numVal.toFixed(2);
+  } else {
+    vScaleInput.value = numVal;
+  }
+
+  verticalScale = numVal;
+};
+
 function setupCanvasHD() {
   dpr = window.devicePixelRatio || 1;
   cssWidth = 600;
@@ -270,27 +288,30 @@ function drawAxes() {
   canvasCtx.fillStyle = '#aaaaaa';
   canvasCtx.font = '10px monospace';
 
-  // 縦軸 dB
-  canvasCtx.fillText('+6 dBFS', 2, centerY - scaleMax + 4);
-  canvasCtx.fillText(' 0 dBFS', 2, centerY - scaleMax * 0.5 + 4);
-  canvasCtx.fillText('-∞ dBFS', 2, centerY + 4);
-  canvasCtx.fillText('-0 dBFS', 2, centerY + scaleMax * 0.5 + 4);
-  canvasCtx.fillText('-6 dBFS', 2, centerY + scaleMax + 4);
+  // 目盛りラベルの動的計算 (1倍で6.0dB, 0.5倍で3.0dB, 0.05倍で0.3dB)
+  const topDbVal = (6 * verticalScale).toFixed(1);
+  const midDbVal = (3 * verticalScale).toFixed(1);
 
-  // ★ 横軸 (ms) と倍速表記の表示 ★
+  // 縦軸 dB 表示の描画部分
+  canvasCtx.fillText(`+${topDbVal} dBFS`, 2, centerY - scaleMax + 4);
+  canvasCtx.fillText(`+${midDbVal} dBFS`, 2, centerY - scaleMax * 0.5 + 4);
+  canvasCtx.fillText(' 0 dBFS', 2, centerY + 4);
+  canvasCtx.fillText(`-${midDbVal} dBFS`, 2, centerY + scaleMax * 0.5 + 4);
+  canvasCtx.fillText(`-${topDbVal} dBFS`, 2, centerY + scaleMax + 4);
+
+  // 横軸 (ms) と倍速表記の表示
   const halfMsStr = (currentSpanMs / 2).toFixed(1) + 'ms';
   const fullMsStr = currentSpanMs.toFixed(0) + 'ms';
   const speedStr = `(×${userSpeedScale.toFixed(3)})`;
 
   canvasCtx.fillText('0ms', plotLeft - 10, centerY + 15);
   canvasCtx.fillText(halfMsStr, plotLeft + plotWidth / 2 - 15, centerY + 15);
-  // 右下に「10ms (×1.000)」のように表示
   canvasCtx.fillText(`${fullMsStr} ${speedStr}`, width - 85, centerY + 15);
 
   // ヘッダー情報
   canvasCtx.fillStyle = '#ffca28';
   canvasCtx.font = 'bold 12px sans-serif';
-  canvasCtx.fillText(`現在の周波数: ${currentFreq} Hz (縦軸: dBFS)`, plotLeft + 10, 18);
+  canvasCtx.fillText(`現在の周波数: ${currentFreq} Hz (スケール: ${verticalScale.toFixed(2)}倍)`, plotLeft + 10, 18);
 
   canvasCtx.restore();
 }
@@ -314,7 +335,6 @@ function drawCalculatedLine(type, color, lineWidth = 2) {
   const plotWidth = width - plotLeft;
 
   const timeSpanSec = spanMs / 1000.0;
-
   const requiredSamples = Math.max(plotWidth * dpr, freq * 12 * timeSpanSec);
   const stepSize = plotWidth / requiredSamples;
 
@@ -325,9 +345,10 @@ function drawCalculatedLine(type, color, lineWidth = 2) {
     const xRatio = (xPixel - plotLeft) / plotWidth;
     const t = xRatio * timeSpanSec;
     
-    const normalPhase = 2 * Math.PI * freq * t - simulatedPhase;
+    // アニメーション用の位相 (simulatedPhase) を均等に適用
+    const normalPhase = 2 * Math.PI * freq * t + simulatedPhase;
     const delaySec = delayMs / 1000.0;
-    const invertPhase = 2 * Math.PI * freq * (t - delaySec) - simulatedPhase;
+    const invertPhase = 2 * Math.PI * freq * (t - delaySec) + simulatedPhase;
 
     const normalVal = getWaveValue(currentWaveType, normalPhase);
     const invertVal = -getWaveValue(currentWaveType, invertPhase);
@@ -343,7 +364,11 @@ function drawCalculatedLine(type, color, lineWidth = 2) {
       yVal = (normalVal * normGainVal) + (invertVal * invGainVal);
     }
 
-    const y = centerY - (yVal * (scaleMax / 2.0));
+    // 縦軸スケール (verticalScale) を適用して振幅を拡大・縮小
+    // 倍率をそのまま乗算（または除算）して振幅を変化させます
+    const scaledYVal = yVal * verticalScale; 
+    // yVal を verticalScale で割ることで、スケール減少時に波形が大きく描画されます
+    const y = centerY - ((yVal / verticalScale) * (scaleMax / 2.0));
 
     if (i === 0) {
       canvasCtx.moveTo(xPixel, y);
