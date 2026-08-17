@@ -355,7 +355,7 @@ function drawCalculatedLine(type, color, lineWidth = 2) {
   canvasCtx.stroke();
 }
 
-// リアルタイム描画ループ（ストロボ効果防止）
+// リアルタイム描画ループ（修正後）
 function drawWaveform(timestamp) {
   requestAnimationFrame(drawWaveform);
 
@@ -363,13 +363,11 @@ function drawWaveform(timestamp) {
   const deltaTime = Math.min((timestamp - lastDrawTime) / 1000, 0.1);
   lastDrawTime = timestamp;
 
-  const spanMs = parseFloat(timeSpanNum.value) || 10;
-  
-  // 表示範囲(10ms等)に合わせた適切なスクロール感のベース値
-  const visualBaseSpeed = (10 / spanMs) * 12;
+  // 現在設定されている周波数を取得
+  const currentFreq = parseFloat(freqNum.value) || 1000;
 
-  // 描画速度(userSpeedScale)に直接比例させて滑らかにコントロール
-  simulatedPhase += 2 * Math.PI * visualBaseSpeed * deltaTime * userSpeedScale;
+  // 実際の周波数(2πf) × 経過時間(秒) × 描画速度倍率 に基づいて正確に位相を更新
+  simulatedPhase += 2 * Math.PI * currentFreq * deltaTime * userSpeedScale;
 
   canvasCtx.save();
   canvasCtx.scale(dpr, dpr);
@@ -382,7 +380,6 @@ function drawWaveform(timestamp) {
   if (isNormalOn) drawCalculatedLine('normal', '#2196f3', 2);
   if (isInvertOn) drawCalculatedLine('invert', '#ff5722', 2);
   
-  // 常時表示
   drawCalculatedLine('combined', '#00e676', 2.5);
 
   canvasCtx.restore();
