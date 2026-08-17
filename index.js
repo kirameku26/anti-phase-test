@@ -271,11 +271,11 @@ function drawAxes() {
   canvasCtx.font = '10px monospace';
 
   // 縦軸 dB
-  canvasCtx.fillText('+6 dB', 2, centerY - scaleMax + 4);
-  canvasCtx.fillText(' 0 dB', 2, centerY - scaleMax * 0.5 + 4);
-  canvasCtx.fillText('-∞ dB', 2, centerY + 4);
-  canvasCtx.fillText(' 0 dB', 2, centerY + scaleMax * 0.5 + 4);
-  canvasCtx.fillText('+6 dB', 2, centerY + scaleMax + 4);
+  canvasCtx.fillText('+6 dBFS', 2, centerY - scaleMax + 4);
+  canvasCtx.fillText(' 0 dBFS', 2, centerY - scaleMax * 0.5 + 4);
+  canvasCtx.fillText('-∞ dBFS', 2, centerY + 4);
+  canvasCtx.fillText(' 0 dBFS', 2, centerY + scaleMax * 0.5 + 4);
+  canvasCtx.fillText('+6 dBFS', 2, centerY + scaleMax + 4);
 
   // ★ 横軸 (ms) と倍速表記の表示 ★
   const halfMsStr = (currentSpanMs / 2).toFixed(1) + 'ms';
